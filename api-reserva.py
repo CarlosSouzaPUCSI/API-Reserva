@@ -1,18 +1,46 @@
 # Precisa importar todas as bibliotecas e funções que vão ser usadas
-from fastapi import FastAPI, status, HTTPException, Depends
+from fastapi import FastAPI, status, HTTPException, Depends, Query
 from schema import reservaEntrada, reservaEdicao
-from model import reservas
+from model import reservas, cliente, sala
 from typing import Optional
 from database import criarSessao
 from sqlmodel import Session, select
+from sqlalchemy import func
+from datetime import datetime, date
+from zoneinfo import ZoneInfo
+from funcoes import verificar
 
 # Criando a instância da aplicação com o FastAPI
 appReserva = FastAPI() # Define o nome da variável que chamará a aplicação, se eu alterar tem que alterar em cada rota e no arquivo pyproject.toml
 
 # Criando as rotas que definirão as ações
 # Rota de criação da reserva 
-@appReserva.post("/reserva", status_code=status.HTTP_201_CREATED) # (, xyz) -> entrega status se não houver levantamento de erro durante a execução
-def criarReserva(dadosEntrada: reservaEntrada, sessao: Session = Depends(criarSessao)): # (X:Y) -> o que receberá será armazenado na variável X e deverá ter o formato Y
+@appReserva.post("/api/reserva", status_code=status.HTTP_201_CREATED) # (, xyz) -> entrega status se não houver levantamento de erro durante a execução
+def criarReserva( 
+    dadosEntrada: reservaEntrada, # (X:Y) -> o que receberá será armazenado na variável X e deverá ter o formato Y
+    sessao: Session = Depends(criarSessao) # Cria a sessão com o banco e diz que depende da minha função, isso força o encerramento quando acabar essa função
+    )  -> reservas: # -> diz o que vai entregar no fim da função, ajuda o openapi a montar a documentação
+    # Criando a função de gerar o tempo
+    agora = lambda: datetime.now(ZoneInfo("America/Sao_Paulo"))
+    
+    # Garantir limpeza
+    verificar(cliente, dadosEntrada.id_cliente, sessao) # verifica se existe o que to informando e já cria o erro se não existir
+    verificar(sala, dadosEntrada.id_sala, sessao)
+
+    if dadosEntrada.entrada >= dadosEntrada.saida:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A entrada fornecida é igual ou após a saída")
+    
+    if dadosEntrada.entrada <= agora():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A reserva não pode ser criada no passado")
+    
+    # Regra de negocio: impedir reservas sejam feitas em horários quebrados
+    if dadosEntrada.entrada.minute != 0 or dadosEntrada.saida.minute != 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A hora de entrada e saída devem ser horas inteiras (exemplo: 10:00)")
+
+    # Regra de negocio: as reservas nao podem passar de dia, data de entrada = data de saida
+    if dadosEntrada.entrada.date() != dadosEntrada.saida.date():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A data de entrada difere da data de saída.")
+
     # Regra de negocio: saber se já existe uma reserva com o a mesma sala que coincida com o horario entregue mesmo que parcialmente
     query = select(reservas).where( # monta a query pro banco
         reservas.id_sala == dadosEntrada.id_sala, # puxa tudo que tiver a sala que recebi
@@ -29,39 +57,63 @@ def criarReserva(dadosEntrada: reservaEntrada, sessao: Session = Depends(criarSe
     # criar a reserva no banco
     sessao.add(novaReserva) # prepara o objeto pra escrever
     sessao.commit() # escreve no banco o que ta pendente
-
-    # buscar o objeto pelas infos da entrada la no banco pra mostrar
     sessao.refresh(novaReserva) # busca a versão atualizada do que enviei e salva (ou seja, vem com o que é resolvido no modelo e no banco)
 
     return novaReserva # retorna o objeto criado junto com o codigo
 
-# # Rota de listagens 
-# # Todas as reservas
-# @appReserva.get("/reserva", status_code=status.HTTP_200_OK)
-# def listarReservas(id_cliente: Optional[int] = None, id_sala: Optional[int] = None ): # Ainda precisa entregar a sessao do banco
-#     listaReservas = ... # pegar a lista de todas as reservas 
-#     return listaReservas # retorna a lista com tudo
-
-# # Uma reserva específica
-# @appReserva.get("/reserva/{id}", status_code=status.HTTP_200_OK)
-# def listarReservas(id: int):
-#     encontrado = False
-#     index = -1
-
-#     for item in listaReservas: # Looping checando todos os itens
-#         index += 1 # Cada item checado adiciona um pra equivaler ao index
-#         if item.id == id: # checa se é o que quero
-#             encontrado = True # muda se achar
-#             break # para o looping assim que achar pra não procurar atoa
-
-#     if encontrado == False: 
-#         raise HTTPException(status_code=404, detail="Reserva informada não encontrada") # Levanta erro caso a reserva pedida não existir
+# Rota de listagens 
+# Todas as reservas, com filtro de cliente, sala ou data
+@appReserva.get("/api/reserva", status_code=status.HTTP_200_OK)
+def listarReserva( # preciso listar tudo, pois método get não pode ter corpo, se eu usar schema, ele pede um objeto no corpo
+    id_cliente: Optional[int] = None, # Com esse default em None não preciso criar 4 rotas, o que não forcer eu não faço
+    id_sala: Optional[int] = None, # Se fornecer mais de um, só vai incrementar o filtro
+    inicio: Optional[date] = None,
+    fim: Optional[date] = None, # Se não fornecer nenhum entrega todas as reservas
+    offset: int = 0, # Se for carregar pagina 2 vai me entregar valor, se nao, é os primeiros valores
+    limit: int = Query(default= 10, le= 100), # limita para proteger a memoria, se nao entregar, lista 10, se entregar mais que 100, muda pra 100 
+    sessao: Session = Depends(criarSessao)
+    ) -> list[reservas]: 
+    # Garantir limpeza
+    if bool(inicio) ^ bool(fim):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Se fornecer inicio ou fim, deve fornecer o outro.")
     
-#     return listaReservas[index] # Terá muito mais complexidade quanto eu colocar o banco, pois terei que buscar nele as informações
+    # criar as variável que vou precisar 
+    query = select(reservas)
+
+    # implementando os filtros
+    if id_cliente:
+        verificar(cliente, id_cliente, sessao) # verifico só se me entregar
+        query = query.where(reservas.id_cliente == id_cliente)
+
+    if id_sala:
+        verificar(sala, id_sala, sessao)
+        query = query.where(reservas.id_sala == id_sala)
+
+    if inicio and fim:
+        query = query.where(
+            func.date(reservas.entrada) >= inicio,
+            func.date(reservas.entrada) <= fim
+            )
+    
+    # Fazer a busca 
+    listaReservas = sessao.exec(query.offset(offset).limit(limit)).all()
+
+    return listaReservas # retorna a lista com tudo
+
+# Uma reserva específica
+@appReserva.get("/api/reserva/{id}", status_code=status.HTTP_200_OK)
+def buscarReserva(
+    id: int,
+    sessao: Session = Depends(criarSessao)
+    ) -> reservas:
+    # busco no banco
+    objeto = verificar(reservas, id, sessao) # essa funcao verifica e devolve o objeto se existir  
+
+    return objeto
 
 # # Rota para edição de reservas ( talvez não faça sentido diretamente no negócio mas entendo ser ok de implementar pelo caso de um dia ser necessário e então já ter ) / Perguntar se preciso de fazer essa separação, pq se for olhar se eu usar Patch e entregar todos os dados já faz o efeito do put
 # # Alterar completamente
-# @appReserva.put("/reserva/{id}", status_code=status.HTTP_200_OK)
+# @appReserva.put("/api/reserva/{id}", status_code=status.HTTP_200_OK)
 # def editarTudo(editarReserva: reserva):
 #     encontrado = False
 #     index = -1
@@ -90,7 +142,7 @@ def criarReserva(dadosEntrada: reservaEntrada, sessao: Session = Depends(criarSe
 #     return listaReservas[-1]
 
 # # Informações específicas
-# @appReserva.patch("/reserva/{id}", status_code=status.HTTP_200_OK)
+# @appReserva.patch("/api/reserva/{id}", status_code=status.HTTP_200_OK)
 # def editar(editarReserva: reservaEdicao):
 #     encontrado = False
 #     index = -1
@@ -117,13 +169,13 @@ def criarReserva(dadosEntrada: reservaEntrada, sessao: Session = Depends(criarSe
 
 # # Rota para exclusão de reservas ( talvez não faça sentido diretamente no negócio mas entendo ser ok de implementar pelo caso de um dia ser necessário e então já ter )
 # # Todas as reservas 
-# @appReserva.delete("/reserva", status_code=status.HTTP_204_NO_CONTENT)
+# @appReserva.delete("/api/reserva", status_code=status.HTTP_204_NO_CONTENT)
 # def deletarTudo():
 #     listaReservas.clear()
 #     return
 
 # # Uma reserva específica
-# @appReserva.delete("/reserva/{id}", status_code=status.HTTP_204_NO_CONTENT)
+# @appReserva.delete("/api/reserva/{id}", status_code=status.HTTP_204_NO_CONTENT)
 # def deletarUm(id: int):
 #     encontrado = False
 #     index = -1

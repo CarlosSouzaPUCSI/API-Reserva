@@ -1,7 +1,7 @@
 from enum import Enum
 from sqlmodel import SQLModel, Field, Column, DateTime
-from typing import Optional
 from sqlalchemy.dialects.postgresql import ENUM
+from typing import Optional
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
