@@ -26,3 +26,11 @@ class reservaEdicao(BaseModel):
     status: Optional[status_reserva] = None
     entrada: Optional[datetime] = None
     saida: Optional[datetime] = None
+    
+    @field_validator("entrada", "saida", mode="after")
+    @classmethod
+    def garantirFuso(cls, data: datetime) -> datetime:
+        if data.tzinfo is None: # se vem sem, poe o -03
+            return data.replace(tzinfo=ZoneInfo("America/Sao_Paulo"))
+        # se tem passa direto e calcula a conversão
+        return data.astimezone(ZoneInfo("America/Sao_Paulo"))

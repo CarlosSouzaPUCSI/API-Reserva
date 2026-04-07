@@ -4,7 +4,7 @@ from schema import reservaEntrada, reservaEdicao
 from model import reservas, cliente, sala
 from typing import Optional
 from database import criarSessao
-from sqlmodel import Session, select
+from sqlmodel import Session, select, delete
 from sqlalchemy import func
 from datetime import datetime, date
 from zoneinfo import ZoneInfo
@@ -111,83 +111,94 @@ def buscarReserva(
 
     return objeto
 
-# # Rota para edição de reservas ( talvez não faça sentido diretamente no negócio mas entendo ser ok de implementar pelo caso de um dia ser necessário e então já ter ) / Perguntar se preciso de fazer essa separação, pq se for olhar se eu usar Patch e entregar todos os dados já faz o efeito do put
-# # Alterar completamente
-# @appReserva.put("/api/reserva/{id}", status_code=status.HTTP_200_OK)
-# def editarTudo(editarReserva: reserva):
-#     encontrado = False
-#     index = -1
-
-#     for item in listaReservas:
-#         index += 1
-#         if item.id == editarReserva.id:
-#             encontrado = True
-#             break
-#     if encontrado == False:
-#         raise HTTPException(status_code=404, detail="Reserva informada não encontrada") # Levanta erro caso a reserva pedida não existir
+# Rota para edição de reservas ( talvez não faça sentido diretamente no negócio mas entendo ser ok de implementar pelo caso de um dia ser necessário e então já ter )
+@appReserva.patch("/api/reserva/{id}", status_code=status.HTTP_200_OK)
+def editar(
+    id: int,
+    dadosEdicao: reservaEdicao,
+    sessao: Session = Depends(criarSessao)
+    ) -> reservas:
+    # Buscar a reserva informada
+    reservaEditar = verificar(reservas, id, sessao)
     
-#     reservaEditada = reserva(
-#         id = editarReserva.id,
-#         id_cliente = editarReserva.id_cliente,
-#         id_sala = editarReserva.id_sala,
-#         status = editarReserva.status,
-#         feito_em = editarReserva.feito_em,
-#         entrada = editarReserva.entrada,
-#         saida = editarReserva.saida
-#     )
+    # Se tiver entrada ou saida mas não os dois, vou pegar o que não tem da reserva original para prencher e fazer validações
+    # Se tiver os dois não faz nada e valida os dados novos, se não tiver nenhum não vai precisar validar as horas 
+    # Se tiver um dos dos dois ou os dois e não tiver sala vou precisar pegar pra validar lá na frente se não vai ter conflito
+    if bool(dadosEdicao.entrada) ^ bool(dadosEdicao.saida):
+        if dadosEdicao.entrada:
+            dadosEdicao.saida = reservaEditar.saida
+        else:
+            dadosEdicao.entrada = reservaEditar.entrada
 
-#     del listaReservas[index] # Deleta o item do index indicado
-#     listaReservas.append(reservaEditada) 
+    if dadosEdicao.entrada or dadosEdicao.saida:
+        if not dadosEdicao.id_sala:
+            dadosEdicao.id_sala = reservaEditar.id_sala
 
-#     return listaReservas[-1]
-
-# # Informações específicas
-# @appReserva.patch("/api/reserva/{id}", status_code=status.HTTP_200_OK)
-# def editar(editarReserva: reservaEdicao):
-#     encontrado = False
-#     index = -1
-
-#     for item in listaReservas:
-#         index += 1
-#         if item.id == editarReserva.id:
-#             encontrado = True
-#             break
-#     if encontrado == False:
-#         raise HTTPException(status_code=404, detail="Reserva informada não encontrada") # Levanta erro caso a reserva pedida não existir
+    # Criando a função de gerar o tempo
+    agora = lambda: datetime.now(ZoneInfo("America/Sao_Paulo"))
     
-#     reservaAntiga = listaReservas[index] # defino o que já existe em uma variável, pelo que entendi, por ser objeto a variável vira uma referência do item dentro da lista e não uma cópia como seria com um int ou str, então ao editar "a variável" eu estou editando na vdd o item da lista
-
-#     novosDados = editarReserva.model_dump(exclude_unset=True) # pego a entrada e excluo todos os itens nulos e só sobram atributos que vão ser modificados, e o id, no objeto
-
-#     for atributo, valor in novosDados.items(): # percorre todos os atributos que sobraram da entrada
-#         if atributo == "id":
-#             continue # pula o id para evitar processamento desnecessário
-
-#         setattr(reservaAntiga, atributo, valor) # Equiparado a objeto.nome = valor, mas como nesse caso o atributo do for é uma str então preciso entregar para essa função
-
-#     return listaReservas[index]
-
-# # Rota para exclusão de reservas ( talvez não faça sentido diretamente no negócio mas entendo ser ok de implementar pelo caso de um dia ser necessário e então já ter )
-# # Todas as reservas 
-# @appReserva.delete("/api/reserva", status_code=status.HTTP_204_NO_CONTENT)
-# def deletarTudo():
-#     listaReservas.clear()
-#     return
-
-# # Uma reserva específica
-# @appReserva.delete("/api/reserva/{id}", status_code=status.HTTP_204_NO_CONTENT)
-# def deletarUm(id: int):
-#     encontrado = False
-#     index = -1
-
-#     for item in listaReservas:
-#         index += 1
-#         if item.id == id:
-#             encontrado = True
-#             break
-#     if encontrado == False:
-#         raise HTTPException(status_code=404, detail="Reserva informada não encontrada") # Levanta erro caso a reserva pedida não existir
+    # Garantir limpeza
+    if dadosEdicao.id_cliente:
+        verificar(cliente, dadosEdicao.id_cliente, sessao)
     
-#     del listaReservas[index]
+    if dadosEdicao.id_sala:
+        verificar(sala, dadosEdicao.id_sala, sessao)
 
-#     return # Terá mais complexidade quanto eu colocar o banco, pois terei que buscar nele as informações
+    if dadosEdicao.entrada:
+        if dadosEdicao.entrada >= dadosEdicao.saida:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A entrada fornecida é igual ou após a saída")
+        
+        if dadosEdicao.entrada <= agora():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A reserva não pode ser criada no passado")
+        
+        # Regra de negocio: impedir reservas sejam feitas em horários quebrados
+        if dadosEdicao.entrada.minute != 0 or dadosEdicao.saida.minute != 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A hora de entrada e saída devem ser horas inteiras (exemplo: 10:00)")
+
+        # Regra de negocio: as reservas nao podem passar de dia, data de entrada = data de saida
+        if dadosEdicao.entrada.date() != dadosEdicao.saida.date():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A data de entrada difere da data de saída.")
+
+        # Regra de negocio: saber se já existe uma reserva com o a mesma sala que coincida com o horario entregue mesmo que parcialmente
+        query = select(reservas).where( # monta a query pro banco
+            reservas.id_sala == dadosEdicao.id_sala, # puxa tudo que tiver a sala que recebi
+            reservas.entrada < dadosEdicao.saida, # tudo que tiver entrada anterior a saida que recebi
+            reservas.saida > dadosEdicao.entrada, # tudo que tiver saida posterior a entrada que recebi, com isso garanto que pega tudo que intercepte esse intervalo
+            reservas.id_reserva != id # Se eu não excluir a própria reserva e eu mudar apenas um horario ele vai se encontrar e dar erro
+            ) 
+        existe = sessao.exec(query).first() # executa e busca a primeira relação, pois se tiver 1 ou 10 iguais tá errado igual, então se achar 1 já poupa de percorrer o resto da tabela
+        if existe:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A sala já está ocupada neste horário")
+        
+    novosDados = dadosEdicao.model_dump(exclude_unset=True) # pego a entrada e excluo todos os itens nulos e só sobram atributos que vão ser modificados no objeto
+
+    reservaEditar.sqlmodel_update(novosDados)
+
+    sessao.add(reservaEditar)
+    sessao.commit()
+    sessao.refresh(reservaEditar)
+
+    return reservaEditar
+
+# Rota para exclusão de reservas ( talvez não faça sentido diretamente no negócio mas entendo ser ok de implementar pelo caso de um dia ser necessário e então já ter )
+# Pra mim nem deveria implementar essas rotas, além da questão de segurança não consigo enxergar uso no dia a dia do negócio.
+# Vou colocar inicialmente so pra deletar sem nenhuma segurança se for preciso faço depois
+# Todas as reservas 
+@appReserva.delete("/api/reserva", status_code=status.HTTP_204_NO_CONTENT)
+def deletarTudo(sessao: Session = Depends(criarSessao)) -> None:
+    sessao.exec(delete(reservas))
+    sessao.commit()
+    return None
+
+# Uma reserva específica
+@appReserva.delete("/api/reserva/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def deletarUm(
+    id: int,
+    sessao: Session = Depends(criarSessao)
+    ) -> None:
+    alvo = verificar(reservas, id, sessao)
+
+    sessao.delete(alvo)
+    sessao.commit()
+
+    return None
