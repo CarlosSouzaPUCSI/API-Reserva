@@ -184,11 +184,11 @@ def editar(
 # Pra mim nem deveria implementar essas rotas, além da questão de segurança não consigo enxergar uso no dia a dia do negócio.
 # Vou colocar inicialmente so pra deletar sem nenhuma segurança se for preciso faço depois
 # Todas as reservas 
-@appReserva.delete("/api/reserva", status_code=status.HTTP_204_NO_CONTENT)
-def deletarTudo(sessao: Session = Depends(criarSessao)) -> None:
-    sessao.exec(delete(reservas))
-    sessao.commit()
-    return None
+# @appReserva.delete("/api/reserva", status_code=status.HTTP_204_NO_CONTENT)
+# def deletarTudo(sessao: Session = Depends(criarSessao)) -> None:
+#     sessao.exec(delete(reservas))
+#     sessao.commit()
+#     return None
 
 # Uma reserva específica
 @appReserva.delete("/api/reserva/{id}", status_code=status.HTTP_204_NO_CONTENT)
