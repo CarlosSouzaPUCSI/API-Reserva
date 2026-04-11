@@ -200,11 +200,12 @@
   }
   ```
   &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+
   <img width="500" height="500" alt="Teste 1 Imagem 1" src="/img/CarlosTE1I1.png" />
 
+  &nbsp; &nbsp; &nbsp; Confirmação com o pgAdmin:
 
-
-
+  <img width="500" height="500" alt="Teste 1 Imagem 2" src="/img/CarlosTE1I2.png" />
 
   - Erro (400 BAD REQUEST)
 
