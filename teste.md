@@ -187,7 +187,8 @@
 &nbsp; &nbsp; &nbsp; As ferramentas utilizadas para atingir este objetivo foram o SwaggerUI e o pgAdmin 4.
 
 #### Teste Endpoint 1 - Criar reserva
-- Resultado Esperado:
+&nbsp; &nbsp; &nbsp; Resultados esperados:
+
   - Sucesso (201 CREATED)
   
   &nbsp; &nbsp; &nbsp; TEste
