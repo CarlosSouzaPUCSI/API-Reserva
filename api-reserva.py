@@ -138,10 +138,10 @@ def editar(
     agora = lambda: datetime.now(ZoneInfo("America/Sao_Paulo"))
     
     # Garantir limpeza
-    if dadosEdicao.id_cliente:
+    if dadosEdicao.id_cliente or dadosEdicao.id_cliente == 0:
         verificar(cliente, dadosEdicao.id_cliente, sessao)
     
-    if dadosEdicao.id_sala:
+    if dadosEdicao.id_sala or dadosEdicao.id_sala == 0:
         verificar(sala, dadosEdicao.id_sala, sessao)
 
     if dadosEdicao.entrada:
