@@ -209,9 +209,48 @@
 
   - Erro (400 BAD REQUEST)
 
+   &nbsp; &nbsp; &nbsp; Executei a rota com o corpo a seguir:
+   ```
+   {
+     "id_cliente": 1,
+     "id_sala": 2,
+     "entrada": "2026-04-12T11:00:00",
+     "saida": "2026-04-12T10:00:00"
+   }
+   ```
+   &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+  
+   <img width="500" height="500" alt="Teste 1 Imagem 3" src="/img/CarlosTE1I3.png" />
+
   - Erro (404 NOT FOUND)
 
+   &nbsp; &nbsp; &nbsp; Executei a rota com o corpo a seguir:
+   ```
+   {
+     "id_cliente": 0,
+     "id_sala": 2,
+     "entrada": "2026-04-12T11:00:00",
+     "saida": "2026-04-12T12:00:00"
+   }
+   ```
+   &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+  
+   <img width="500" height="500" alt="Teste 1 Imagem 4" src="/img/CarlosTE1I4.png" />
+
   - Erro (409 CONFLICT)
+  
+   &nbsp; &nbsp; &nbsp; Executei a rota com o corpo a seguir:
+   ```
+   {
+     "id_cliente": 1,
+     "id_sala": 2,
+     "entrada": "2026-04-12T11:00:00",
+     "saida": "2026-04-12T10:00:00"
+   }
+   ```
+   &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+  
+   <img width="500" height="500" alt="Teste 1 Imagem 5" src="/img/CarlosTE1I5.png" />
 
 #### Teste Endpoint 2 - Listar reservas
 #### Teste Endpoint 3 - Listar reservas por ID
