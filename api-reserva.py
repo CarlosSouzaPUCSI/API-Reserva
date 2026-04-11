@@ -15,7 +15,35 @@ appReserva = FastAPI() # Define o nome da variável que chamará a aplicação, 
 
 # Criando as rotas que definirão as ações
 # Rota de criação da reserva 
-@appReserva.post("/api/reserva", status_code=status.HTTP_201_CREATED) # (, xyz) -> entrega status se não houver levantamento de erro durante a execução
+@appReserva.post(
+        "/api/reserva", 
+        status_code=status.HTTP_201_CREATED, # entrega status se não houver levantamento de erro durante a execução
+        responses={ # Lista os erros que podem acontecer na execução da rota. Serve para o swagger.
+            400: {
+                "description": "Erros de entrada do usuário.",
+                "content": {
+                    "application/json": {
+                        "example": {"detail": "Mensagem de erro depende do tipo de falha teve nos dados de entrada. Exemplo: A entrada fornecida é igual ou após a saída."}
+                    }
+                }
+            },
+            404: {
+                "description": "Não encontrado",
+                "content": {
+                    "application/json": {
+                        "example": {"detail": "Mensagem de erro depende do tipo de dado que não foi encontrado. Exemplo: O id 1 de cliente enviado não existe."}
+                    }
+                }
+            },
+            409: {
+                "description": "Conflito",
+                "content": {
+                    "application/json": {
+                        "example": {"detail": "A sala já está ocupada neste horário"}
+                    }
+                }
+            }
+        }) 
 def criarReserva( 
     dadosEntrada: reservaEntrada, # (X:Y) -> o que receberá será armazenado na variável X e deverá ter o formato Y
     sessao: Session = Depends(criarSessao) # Cria a sessão com o banco e diz que depende da minha função, isso força o encerramento quando acabar essa função
@@ -28,14 +56,14 @@ def criarReserva(
     verificar(sala, dadosEntrada.id_sala, sessao)
 
     if dadosEntrada.entrada >= dadosEntrada.saida:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A entrada fornecida é igual ou após a saída")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A entrada fornecida é igual ou após a saída.")
     
     if dadosEntrada.entrada <= agora():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A reserva não pode ser criada no passado")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A reserva não pode ser criada no passado.")
     
     # Regra de negocio: impedir reservas sejam feitas em horários quebrados
     if dadosEntrada.entrada.minute != 0 or dadosEntrada.saida.minute != 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A hora de entrada e saída devem ser horas inteiras (exemplo: 10:00)")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A hora de entrada e saída devem ser horas inteiras (exemplo: 10:00).")
 
     # Regra de negocio: as reservas nao podem passar de dia, data de entrada = data de saida
     if dadosEntrada.entrada.date() != dadosEntrada.saida.date():
@@ -63,7 +91,19 @@ def criarReserva(
 
 # Rota de listagens 
 # Todas as reservas, com filtro de cliente, sala ou data
-@appReserva.get("/api/reserva", status_code=status.HTTP_200_OK)
+@appReserva.get(
+        "/api/reserva", 
+        status_code=status.HTTP_200_OK,
+        responses={
+            400: {
+                "description": "Erros de entrada do usuário.",
+                "content": {
+                    "application/json": {
+                        "example": {"detail": "Se fornecer inicio ou fim, deve fornecer o outro."}
+                    }
+                }
+            }
+        })
 def listarReserva( # preciso listar tudo, pois método get não pode ter corpo, se eu usar schema, ele pede um objeto no corpo
     id_cliente: Optional[int] = None, # Com esse default em None não preciso criar 4 rotas, o que não forcer eu não faço
     id_sala: Optional[int] = None, # Se fornecer mais de um, só vai incrementar o filtro
@@ -101,7 +141,19 @@ def listarReserva( # preciso listar tudo, pois método get não pode ter corpo, 
     return listaReservas # retorna a lista com tudo
 
 # Uma reserva específica
-@appReserva.get("/api/reserva/{id}", status_code=status.HTTP_200_OK)
+@appReserva.get(
+        "/api/reserva/{id}", 
+        status_code=status.HTTP_200_OK,
+        responses={ # Lista os erros que podem acontecer na execução da rota. Serve para o swagger.
+            404: {
+                "description": "Não encontrado",
+                "content": {
+                    "application/json": {
+                        "example": {"detail": "O id 'X' de reserva enviado não existe."}
+                    }
+                }
+            }
+        }) 
 def buscarReserva(
     id: int,
     sessao: Session = Depends(criarSessao)
@@ -112,7 +164,35 @@ def buscarReserva(
     return objeto
 
 # Rota para edição de reservas ( talvez não faça sentido diretamente no negócio mas entendo ser ok de implementar pelo caso de um dia ser necessário e então já ter )
-@appReserva.patch("/api/reserva/{id}", status_code=status.HTTP_200_OK)
+@appReserva.patch(
+        "/api/reserva/{id}", 
+        status_code=status.HTTP_200_OK,
+        responses={ # Lista os erros que podem acontecer na execução da rota. Serve para o swagger.
+            400: {
+                "description": "Erros de entrada do usuário.",
+                "content": {
+                    "application/json": {
+                        "example": {"detail": "Mensagem de erro depende do tipo de falha teve nos dados de entrada. Exemplo: A entrada fornecida é igual ou após a saída."}
+                    }
+                }
+            },
+            404: {
+                "description": "Não encontrado",
+                "content": {
+                    "application/json": {
+                        "example": {"detail": "Mensagem de erro depende do tipo de dado que não foi encontrado. Exemplo: O id 1 de cliente enviado não existe."}
+                    }
+                }
+            },
+            409: {
+                "description": "Conflito",
+                "content": {
+                    "application/json": {
+                        "example": {"detail": "A sala já está ocupada neste horário"}
+                    }
+                }
+            }
+        })
 def editar(
     id: int,
     dadosEdicao: reservaEdicao,
@@ -191,7 +271,19 @@ def editar(
 #     return None
 
 # Uma reserva específica
-@appReserva.delete("/api/reserva/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@appReserva.delete(
+        "/api/reserva/{id}", 
+        status_code=status.HTTP_204_NO_CONTENT,
+        responses={ # Lista os erros que podem acontecer na execução da rota. Serve para o swagger.
+            404: {
+                "description": "Não encontrado",
+                "content": {
+                    "application/json": {
+                        "example": {"detail": "O id 'X' de reservas enviado não existe."}
+                    }
+                }
+            }
+        })
 def deletarUm(
     id: int,
     sessao: Session = Depends(criarSessao)

@@ -6,6 +6,6 @@ def verificar(tabela, id: int, sessao: Session):
 
     if not existe:
         nome = tabela.__name__
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"O {id} de {nome} enviado não existe.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"O id {id} de {nome} enviado não existe.")
     
     return existe
