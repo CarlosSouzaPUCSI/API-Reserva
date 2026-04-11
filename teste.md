@@ -187,12 +187,20 @@
 &nbsp; &nbsp; &nbsp; As ferramentas utilizadas para atingir este objetivo foram o SwaggerUI e o pgAdmin 4.
 
 #### Teste Endpoint 1 - Criar reserva
-&nbsp; &nbsp; &nbsp; Resultados esperados:
-
+- Resultado Esperado:
   - Sucesso (201 CREATED)
   
-  &nbsp; &nbsp; &nbsp; TEste
-
+  &nbsp; &nbsp; &nbsp; Executei a rota com o corpo a seguir:
+  ```
+  {
+    "id_cliente": 1,
+    "id_sala": 2,
+    "entrada": "2026-04-12T11:00:00",
+    "saida": "2026-04-12T16:00:00"
+  }
+  ```
+  &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+  <img width="500" height="500" alt="Teste 1 Imagem 1" src="/img/CarlosTE1I1.png" />
 
 
 
