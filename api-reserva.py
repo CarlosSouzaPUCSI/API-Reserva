@@ -73,7 +73,8 @@ def criarReserva(
     query = select(reservas).where( # monta a query pro banco
         reservas.id_sala == dadosEntrada.id_sala, # puxa tudo que tiver a sala que recebi
         reservas.entrada < dadosEntrada.saida, # tudo que tiver entrada anterior a saida que recebi
-        reservas.saida > dadosEntrada.entrada # tudo que tiver saida posterior a entrada que recebi, com isso garanto que pega tudo que intercepte esse intervalo
+        reservas.saida > dadosEntrada.entrada, # tudo que tiver saida posterior a entrada que recebi, com isso garanto que pega tudo que intercepte esse intervalo
+        reservas.status != "Cancelada"
         ) 
     existe = sessao.exec(query).first() # executa e busca a primeira relação, pois se tiver 1 ou 10 iguais tá errado igual, então se achar 1 já poupa de percorrer o resto da tabela
     if existe:

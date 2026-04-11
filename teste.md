@@ -1,7 +1,5 @@
 ## API Endpoints
 
-[Liste os principais endpoints da API, incluindo as operações disponíveis, os parâmetros esperados e as respostas retornadas.]
-
 ### API Reserva - Carlos
 #### Endpoint 1
 - Método: POST
@@ -190,69 +188,168 @@
 - Resultado Esperado:
   - Sucesso (201 CREATED)
   
-  &nbsp; &nbsp; &nbsp; Executei a rota com o corpo a seguir:
-  ```
-  {
-    "id_cliente": 1,
-    "id_sala": 2,
-    "entrada": "2026-04-12T11:00:00",
-    "saida": "2026-04-12T16:00:00"
-  }
-  ```
-  &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+    &nbsp; &nbsp; &nbsp; Executei a rota com o corpo a seguir:
+    ```
+    {
+      "id_cliente": 1,
+      "id_sala": 2,
+      "entrada": "2026-04-12T11:00:00",
+      "saida": "2026-04-12T16:00:00"
+    }
+    ```
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+  
+    <img width="500" height="500" alt="Teste 1 Imagem 1" src="/img/CarlosTE1I1.png" />
 
-  <img width="500" height="500" alt="Teste 1 Imagem 1" src="/img/CarlosTE1I1.png" />
+    &nbsp; &nbsp; &nbsp; Confirmação com o pgAdmin:
 
-  &nbsp; &nbsp; &nbsp; Confirmação com o pgAdmin:
-
-  <img width="500" height="500" alt="Teste 1 Imagem 2" src="/img/CarlosTE1I2.png" />
+    <img width="500" height="500" alt="Teste 1 Imagem 2" src="/img/CarlosTE1I2.png" />
 
   - Erro (400 BAD REQUEST)
 
-   &nbsp; &nbsp; &nbsp; Executei a rota com o corpo a seguir:
-   ```
-   {
-     "id_cliente": 1,
-     "id_sala": 2,
-     "entrada": "2026-04-12T11:00:00",
-     "saida": "2026-04-12T10:00:00"
-   }
-   ```
-   &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
-  
-   <img width="500" height="500" alt="Teste 1 Imagem 3" src="/img/CarlosTE1I3.png" />
+    &nbsp; &nbsp; &nbsp; Executei a rota com o corpo a seguir:
+    ```
+    {
+      "id_cliente": 1,
+      "id_sala": 2,
+      "entrada": "2026-04-12T11:00:00",
+      "saida": "2026-04-12T10:00:00"
+    }
+    ```
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+   
+    <img width="500" height="500" alt="Teste 1 Imagem 3" src="/img/CarlosTE1I3.png" />
 
   - Erro (404 NOT FOUND)
 
-   &nbsp; &nbsp; &nbsp; Executei a rota com o corpo a seguir:
-   ```
-   {
-     "id_cliente": 0,
-     "id_sala": 2,
-     "entrada": "2026-04-12T11:00:00",
-     "saida": "2026-04-12T12:00:00"
-   }
-   ```
-   &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
-  
-   <img width="500" height="500" alt="Teste 1 Imagem 4" src="/img/CarlosTE1I4.png" />
+    &nbsp; &nbsp; &nbsp; Executei a rota com o corpo a seguir:
+    ```
+    {
+      "id_cliente": 0,
+      "id_sala": 2,
+      "entrada": "2026-04-12T11:00:00",
+      "saida": "2026-04-12T12:00:00"
+    }
+    ```
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+    
+    <img width="500" height="500" alt="Teste 1 Imagem 4" src="/img/CarlosTE1I4.png" />
 
   - Erro (409 CONFLICT)
   
-   &nbsp; &nbsp; &nbsp; Executei a rota com o corpo a seguir:
-   ```
-   {
-     "id_cliente": 1,
-     "id_sala": 2,
-     "entrada": "2026-04-12T11:00:00",
-     "saida": "2026-04-12T10:00:00"
-   }
-   ```
-   &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
-  
-   <img width="500" height="500" alt="Teste 1 Imagem 5" src="/img/CarlosTE1I5.png" />
+    &nbsp; &nbsp; &nbsp; Executei a rota com o corpo a seguir:
+    ```
+    {
+      "id_cliente": 1,
+      "id_sala": 2,
+      "entrada": "2026-04-12T11:00:00",
+      "saida": "2026-04-12T10:00:00"
+    }
+    ```
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+   
+    <img width="500" height="500" alt="Teste 1 Imagem 5" src="/img/CarlosTE1I5.png" />
 
 #### Teste Endpoint 2 - Listar reservas
+- Resultado Esperado:
+  - Sucesso (200 OK)
+
+    &nbsp; &nbsp; &nbsp; Executei sem informar nenhum parâmetro, isso significa que deve listar todas as reservas existentes.
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+  
+    <img width="500" height="500" alt="Teste 2 Imagem 1" src="/img/CarlosTE2I1.png" />
+
+  - Erro (400 BAD REQUEST)
+  
+    &nbsp; &nbsp; &nbsp; Executei informando apenas o parâmetro de inicio como "   2026-04-11 ".
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+  
+    <img width="500" height="500" alt="Teste 2 Imagem 2" src="/img/CarlosTE2I1.png" />
+
 #### Teste Endpoint 3 - Listar reservas por ID
+- Resultado Esperado:
+  - Sucesso (200 OK)
+
+    &nbsp; &nbsp; &nbsp; Executei informando o parâmetro de id como "9".
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+  
+    <img width="500" height="500" alt="Teste 3 Imagem 1" src="/img/CarlosTE3I1.png" />
+
+  - Erro (404 NOT FOUND)
+  
+    &nbsp; &nbsp; &nbsp; Executei informando o parâmetro de id como "8".
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+  
+    <img width="500" height="500" alt="Teste 3 Imagem 2" src="/img/CarlosTE3I1.png" />
+
 #### Teste Endpoint 4 - Editar reservas por ID
+- Resultado Esperado:
+  - Sucesso (200 OK)
+  
+    &nbsp; &nbsp; &nbsp; Executei a rota com o parâmetro id "9" e corpo a seguir:
+    ```
+    {
+      "status": "Cancelada"
+    }
+    ```
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+  
+    <img width="500" height="500" alt="Teste 4 Imagem 1" src="/img/CarlosTE4I1.png" />
+
+    &nbsp; &nbsp; &nbsp; Confirmação com o pgAdmin:
+  
+    <img width="500" height="500" alt="Teste 4 Imagem 2" src="/img/CarlosTE4I2.png" />
+
+  - Erro (400 BAD REQUEST)
+
+    &nbsp; &nbsp; &nbsp; Executei a rota com o parâmetro id "9" e corpo a seguir:
+    ```
+    {
+      "entrada": "2026-04-12T12:09:00",
+      "saida": "2026-04-12T13:00:00"
+    }
+    ```
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+  
+    <img width="500" height="500" alt="Teste 4 Imagem 3" src="/img/CarlosTE1I4.png" />
+
+  - Erro (404 NOT FOUND)
+
+    &nbsp; &nbsp; &nbsp; Executei a rota com o parâmetro id "9" e corpo a seguir:
+    ```
+    {
+      "id_cliente": 2
+    }
+    ```
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+   
+    <img width="500" height="500" alt="Teste 4 Imagem 4" src="/img/CarlosTE4I4.png" />
+ 
+  -  Erro (409 CONFLICT)
+
+    &nbsp; &nbsp; &nbsp; Criei uma nova reserva e executei a rota com o parâmetro id "9" e corpo a seguir:
+    ```
+    {
+      "entrada": "2026-04-12T10:00:00",
+      "saida": "2026-04-12T11:00:00"
+    }
+    ```
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+   
+    <img width="500" height="500" alt="Teste 4 Imagem 5" src="/img/CarlosTE4I5.png" />
+
 #### Teste Endpoint 5 - Deletar reservas por ID
+- Resultado Esperado:
+  - Sucesso (204 NO CONTENT)
+
+    &nbsp; &nbsp; &nbsp; Executei com parâmetro id "9".
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+  
+    <img width="500" height="500" alt="Teste 5 Imagem 1" src="/img/CarlosTE5I1.png" />
+
+  - Erro (400 BAD REQUEST)
+  
+    &nbsp; &nbsp; &nbsp; Executei com parâmetro id "5".
+    &nbsp; &nbsp; &nbsp; Saída recebida pela interface:
+  
+    <img width="500" height="500" alt="Teste 5 Imagem 2" src="/img/CarlosTE5I1.png" />
